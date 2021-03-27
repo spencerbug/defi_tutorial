@@ -5,9 +5,9 @@ import "./DaiToken.sol";
 
 contract TokenFarm {
     string public name = "Dapp Token Farm";
-    address public owner;
     DappToken public dappToken;
     DaiToken public daiToken;
+    address public owner;
 
     address[] public stakers;
     mapping(address => uint) public stakingBalance;
@@ -20,35 +20,31 @@ contract TokenFarm {
         owner = msg.sender;
     }
 
+    
+    // 1) Stake Token (deposit)
+    // Take dapp tokens, send to tokenFarm
     function stakeTokens(uint _amount) public {
-        // Require amount greater than 0
-        require(_amount > 0, "amount cannot be 0");
-
-        // Trasnfer Mock Dai tokens to this contract for staking
+        require(_amount > 0, "Amount cannot be 0");
+        // Transfer Mock Dai Tokens to this contract's address for staking
         daiToken.transferFrom(msg.sender, address(this), _amount);
-
         // Update staking balance
-        stakingBalance[msg.sender] = stakingBalance[msg.sender] + _amount;
+        stakingBalance[msg.sender] += _amount;
 
         // Add user to stakers array *only* if they haven't staked already
-        if(!hasStaked[msg.sender]) {
+        if (!hasStaked[msg.sender]) {
             stakers.push(msg.sender);
         }
-
-        // Update staking status
-        isStaking[msg.sender] = true;
+        // update staking status
         hasStaked[msg.sender] = true;
+        isStaking[msg.sender] = true;
     }
 
-    // Unstaking Tokens (Withdraw)
+    // Unstaking Tokens (withdraw)
     function unstakeTokens() public {
-        // Fetch staking balance
         uint balance = stakingBalance[msg.sender];
+        require(balance > 0, "Balance cannot be 0");
 
-        // Require amount greater than 0
-        require(balance > 0, "staking balance cannot be 0");
-
-        // Transfer Mock Dai tokens to this contract for staking
+        // Transfer mock dai tokens from this contract back to the user to unstake
         daiToken.transfer(msg.sender, balance);
 
         // Reset staking balance
@@ -56,20 +52,18 @@ contract TokenFarm {
 
         // Update staking status
         isStaking[msg.sender] = false;
+
     }
 
-    // Issuing Tokens
+    // Issuing Tokens to all stakers
+    // for every person who is staked in the app, fetch the balance, and send the same amount in dai tokens
     function issueTokens() public {
-        // Only owner can call this function
         require(msg.sender == owner, "caller must be the owner");
-
-        // Issue tokens to all stakers
-        for (uint i=0; i<stakers.length; i++) {
+        for (uint i=0; i < stakers.length; i++) {
             address recipient = stakers[i];
             uint balance = stakingBalance[recipient];
-            if(balance > 0) {
-                dappToken.transfer(recipient, balance);
-            }
+            dappToken.transfer(recipient, balance);
         }
     }
+
 }
